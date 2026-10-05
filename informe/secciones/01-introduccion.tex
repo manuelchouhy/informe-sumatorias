@@ -1,0 +1,66 @@
+\section{Introducción}
+\label{sec:introduccion}
+% Planteo del problema, justificación, objetivos (general y específicos), estructura del informe.
+% Tiene que ser más larga que el resumen.
+
+La suma de números reales es conmutativa y asociativa. Esas dos propiedades permiten escribir una
+sumatoria como $\sum_{k=1}^{N} x_k$ sin aclarar en qué orden se recorren los términos ni cómo se
+agrupan los paréntesis: cualquier camino conduce al mismo valor. La aritmética que ejecuta una
+computadora no ofrece esa garantía. Cada resultado intermedio debe caber en una cantidad fija de
+bits, así que casi todas las operaciones redondean. Ese redondeo depende de los valores que llegan
+a cada paso. Dos programas que calculan la misma sumatoria con distinto orden o distinto
+agrupamiento son entonces dos algoritmos diferentes, y pueden devolver números diferentes
+(Goldberg, 1991).
+
+Esa distancia entre la propiedad algebraica y su implementación aparece en situaciones corrientes de
+programación. Un mismo código puede dar resultados distintos al paralelizarse, al cambiar de
+biblioteca o al reordenar un bucle. Una suma de muchos términos pequeños puede perder cifras
+significativas sin que nada en el programa lo señale. El problema no se anuncia con un mensaje de
+error: el cálculo termina, devuelve un número con quince dígitos y algunos de esos dígitos son
+incorrectos. Detectarlo exige una referencia contra la cual medir el error y un modelo de los
+mecanismos que lo producen. Ambos son objeto del análisis numérico del redondeo (Higham, 2002).
+
+Este trabajo estudia ese fenómeno sobre tres sucesiones elegidas para hacerlo medible. La primera,
+$a_N = \sum_{k=1}^{N} (1 + b^{k} - b^{k})$, vale exactamente $N$ en $\mathbb{R}$ para cualquier base
+$b$, de modo que toda desviación observada proviene del cálculo y no del planteo. La segunda,
+$b_N = \sum_{k=1}^{N} 1/(k(k+1))$, tiene forma cerrada $N/(N+1)$ y admite varias formas de
+recorrerse y de escribirse, lo que permite comparar algoritmos contra un valor de referencia. La
+tercera, $c_N = \sum_{k=1}^{N} 1/(\sqrt{k^{2}+1} + k)$, no tiene forma cerrada conocida pero sí una
+representación algebraicamente equivalente, $\sqrt{k^{2}+1} - k$, expuesta a la cancelación entre
+cifras próximas. Las tres comparten una condición: el resultado correcto se conoce de antemano o se
+puede acotar, y sin esa condición el error no sería observable.
+
+El objetivo general es determinar en qué condiciones las propiedades algebraicas de la suma dejan de
+valer en la aritmética de una computadora, cuánto se aparta el resultado del valor exacto en cada
+caso y qué explica ese apartamiento. De ahí se desprenden cinco objetivos específicos:
+
+\begin{enumerate}
+  \item Identificar a partir de qué tamaño de los sumandos la agrupación de los paréntesis altera el
+  resultado de una suma, y contrastar el comportamiento del entero de precisión arbitraria de Python
+  con el del punto flotante de doble precisión y con el del entero de ancho fijo.
+  \item Medir cómo depende el error de una suma acumulada del orden en que se recorren los términos,
+  comparando cuatro estrategias de acumulación sobre la misma serie, entre ellas la suma compensada
+  de Kahan.
+  \item Cuantificar la discrepancia entre representaciones algebraicamente equivalentes de una misma
+  sumatoria y establecer cuándo la cancelación entre cantidades próximas degrada el resultado y
+  cuándo resulta inofensiva.
+  \item Contrastar cada medición con las cotas de error que predice el análisis teórico, y evaluar
+  si describen el comportamiento observado o lo sobreestiman.
+  \item Producir un conjunto de programas que genere todas las figuras y tablas del informe, de modo
+  que cada dato presentado sea reproducible a partir del código.
+\end{enumerate}
+
+El informe se organiza en cinco secciones además de esta, más la bibliografía. La sección \ref{sec:marco} reúne los
+conceptos necesarios para leer los resultados: la representación en punto flotante y sus dos
+constantes de resolución, los enteros de precisión arbitraria, el estado de las propiedades
+conmutativa y asociativa en la aritmética de máquina, la medida de error empleada, la suma de Kahan,
+las sumas telescópicas y la cancelación catastrófica. Allí quedan enunciadas las cotas que después
+se comparan contra los datos. La sección \ref{sec:metodologia} describe el entorno, el diseño de
+cada experimento, los criterios de análisis, el tratamiento de la aleatoriedad y la ubicación del
+código. La sección
+\ref{sec:resultados} presenta las mediciones agrupadas por fenómeno y no por experimento: la pérdida
+de la asociatividad, la dependencia del orden de suma y el comportamiento de representaciones
+equivalentes. La sección \ref{sec:discusion} interpreta esas mediciones, las compara con las cotas
+teóricas, examina dos resultados que contradicen la expectativa inicial y enuncia las limitaciones
+del estudio. La sección \ref{sec:conclusiones} sintetiza las respuestas a los objetivos y señala
+líneas de trabajo posteriores.

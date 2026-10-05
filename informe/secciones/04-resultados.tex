@@ -1,0 +1,313 @@
+\section{Resultados}
+\label{sec:resultados}
+% Datos, figuras y tablas SIN interpretación. Organizado por fenómeno, no por ítem de la consigna.
+% Toda figura citada por número; pies de figura autocontenidos.
+
+\subsection{Pérdida de la asociatividad}
+\label{subsec:res-asociatividad}
+
+Con $b$ de tipo entero, las tres asociaciones de $a_N = \sum_{k=1}^{N} (1 + b^{k} - b^{k})$
+devuelven exactamente $N$ para todo $N$ del rango y para las cuatro bases ensayadas. Las tres curvas
+de la Figura \ref{fig:exp1-int} coinciden entre sí y con la recta $a_N = N$ en los cuatro paneles.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{exp1-asociaciones-int.pdf}
+  \caption{Valor de $a_N = \sum_{k=1}^{N} (1 + b^{k} - b^{k})$ para $N = 1, 2, \ldots, 1000$ con las
+  tres asociaciones y $b$ de tipo \texttt{int}, en escala doblemente logarítmica. Cada panel
+  corresponde a una base. La línea gris continua marca el valor exacto $a_N = N$. Las tres
+  asociaciones coinciden con ella en todo el rango y por eso se superponen.}
+  \label{fig:exp1-int}
+\end{figure}
+
+Con $b$ de tipo flotante el resultado cambia. La Figura \ref{fig:exp1-float} muestra que $a_N$
+acompaña a $N$ solo hasta un valor $k^{\ast}$ que depende de la base y después se estanca en una
+meseta. Más adelante la curva desaparece del gráfico: $a_N$ vale \texttt{NaN} a partir del primer
+$k$ en que $b^{k}$ desborda a infinito. La Tabla \ref{tab:exp1-umbrales} reúne los tres números que
+caracterizan cada base: el $k^{\ast}$ que predice la condición $b^{k} \ge 2^{53}$ de la sección
+\ref{subsec:punto-flotante}, la altura de la meseta que alcanza cada asociación y el primer $k$ con
+$b^{k} = \infty$. El $k^{\ast}$ predicho coincide con la meseta medida en todas las bases y
+asociaciones salvo en $b = \pm 2.0$, donde alguna asociación difiere en un término. Las dos
+primeras asociaciones dan resultados idénticos en las ocho bases de la tabla. La tercera se aparta
+de las otras dos solo en $b = 2.0$, donde retiene un término más (53 contra 52), y en $b = -2.0$,
+donde la asimetría se invierte.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{exp1-asociaciones-float.pdf}
+  \caption{Valor de $a_N$ para $N = 1, 2, \ldots, 1000$ con las tres asociaciones y $b$ de tipo
+  \texttt{float}, en escala doblemente logarítmica. La línea gris continua marca el valor exacto
+  $a_N = N$ y la línea vertical de trazo y punto, el primer $k$ en que $b^{k}$ desborda a infinito.
+  Las curvas se detienen ahí porque $a_N$ vale \texttt{NaN} de ese punto en adelante. Con
+  $b = 2.0$ no hay desborde dentro del rango.}
+  \label{fig:exp1-float}
+\end{figure}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Umbrales medidos por base y asociación con $b$ de tipo \texttt{float}. La columna
+  $k^{\ast}$ predicho es el mayor $k$ con $|b|^{k} < 2^{53}$; las tres siguientes son la altura de
+  la meseta de $a_N$, es decir la cantidad de términos que aportan 1 antes de que el sumando se
+  anule. La última columna indica el primer $k$ con $|b|^{k} = \infty$.}
+  \label{tab:exp1-umbrales}
+  \input{tablas/exp1-umbrales}
+\end{table}
+
+El fenómeno no aparece cuando $0 \le b \le 1$. La Tabla \ref{tab:exp1-b-hasta-uno} cubre cinco
+bases de ese rango, $b \in \{0.0,\, 0.1,\, 0.5,\, 0.9,\, 1.0\}$. El desvío de un término respecto de 1
+nunca supera $1.11 \times 10^{-16}$, y el error final $|a_{1000} - 1000|$ es exactamente cero en
+las cinco bases.
+Con bases negativas, en cambio, se reproduce lo observado con las positivas. La Figura
+\ref{fig:exp1-negativas} tiene la misma forma que la Figura \ref{fig:exp1-float}. Los umbrales de
+las cuatro bases negativas de la Tabla \ref{tab:exp1-umbrales} coinciden con los de $|b|$ salvo la
+inversión ya señalada en $b = \pm 2.0$.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Comportamiento con $0 \le b \le 1$. Las tres primeras columnas dan el desvío máximo de un
+  término respecto de su valor exacto 1, para cada asociación y sobre $k = 1, \ldots, 1000$; la
+  última, el error absoluto de la suma completa.}
+  \label{tab:exp1-b-hasta-uno}
+  \input{tablas/exp1-bonus-b-hasta-uno}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{exp1-bases-negativas.pdf}
+  \caption{Valor de $a_N$ para $N = 1, 2, \ldots, 1000$ con bases negativas de tipo \texttt{float},
+  en escala doblemente logarítmica. Cada panel corresponde a una base. La línea gris continua marca
+  el valor exacto $a_N = N$ y la línea vertical de trazo y punto, el primer $k$ en que $b^{k}$
+  desborda a infinito; las curvas se detienen ahí porque $a_N$ vale \texttt{NaN} de ese punto en
+  adelante. Con $b = -2.0$ no hay desborde dentro del rango.}
+  \label{fig:exp1-negativas}
+\end{figure}
+
+Los enteros de ancho fijo dan un resultado distinto del de los flotantes. La Tabla
+\ref{tab:exp1-int64} registra, para un entero con signo de 64 bits, el primer $k$ en que $b^{k}$
+sale del rango representable, el valor exacto de esa potencia y el valor que efectivamente queda
+almacenado, que en tres de las cuatro bases tiene el signo cambiado. Pese a eso, $a_{1000}$ vale
+1000 en las cuatro bases, igual que con los enteros de Python.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Desborde de los enteros de 64 bits. Para cada base se indica el primer $k$ cuya potencia
+  excede el rango de un entero con signo de 64 bits, el valor exacto de $b^{k}$, el valor
+  almacenado tras el desborde y el resultado de la suma completa, calculado con la simulación de
+  la aritmética de 64 bits y con el entero de precisión arbitraria de Python.}
+  \label{tab:exp1-int64}
+  \input{tablas/exp1-bonus-int64}
+\end{table}
+
+El costo de la aritmética exacta se midió aparte. La Tabla \ref{tab:exp1-costo} muestra que el
+tamaño de $b^{N}$ crece linealmente con $N$, hasta 332\,193 bits (43.3 KiB) en $N = 100\,000$,
+mientras que el tiempo de la corrida con enteros crece más rápido que el de flotantes: el cociente
+entre ambos crece con $N$ y llega a dos órdenes de magnitud en $N = 100\,000$.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Costo de los enteros de precisión arbitraria con $b = 10$. Se informa el tamaño de la
+  última potencia calculada, en bits y en KiB, y el tiempo de la corrida completa con \texttt{int}
+  y con \texttt{float}, en milisegundos.}
+  \label{tab:exp1-costo}
+  \input{tablas/exp1-bonus-costo-enteros}
+
+  \vspace{0.5em}
+  \begin{minipage}{0.92\textwidth}
+    \small \textit{Nota.} Cada tiempo es el mínimo de tres repeticiones tomadas con
+    \texttt{time.perf\_counter()} y depende de la máquina y de la carga del sistema, así que tanto
+    los valores absolutos como su cociente cambian entre corridas.
+  \end{minipage}
+\end{table}
+
+\subsection{Dependencia del orden de suma}
+\label{subsec:res-orden}
+
+Los cuatro algoritmos de suma aplicados a $b_N = \sum_{k=1}^{N} 1/(k(k+1))$ producen resultados
+distintos entre sí, y la diferencia crece con $N$. La Figura \ref{fig:exp2-error} separa las cuatro
+curvas en dos grupos. Acumular de mayor a menor módulo y acumular en orden aleatorio dan errores
+relativos que crecen con $N$ y llegan al orden de $10^{-14}$ en el extremo del rango grande.
+Acumular de menor a mayor módulo y la suma de Kahan se mantienen en el orden de $10^{-16}$ sobre
+las dos grillas, sin tendencia creciente. La cota $\sqrt{N}\,u$ de la ecuación
+\eqref{eq:cota-raiz}, dibujada en la misma figura, queda por encima de las dos curvas que crecen en
+todo el rango.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{exp2-error-relativo.pdf}
+  \caption{Error relativo de $b_N$ respecto de la forma cerrada $N/(N+1)$ para los cuatro
+  algoritmos de suma, en escala \texttt{symlog} en el eje vertical, que permite mostrar los valores
+  exactamente nulos junto con los positivos. El panel (a) cubre $N = 10, 20, \ldots, 10\,000$ y el
+  panel (b), $N = 1000, 2000, \ldots, 10^{6}$. Las líneas grises marcan la cota estadística
+  $\sqrt{N}\,u$ y la unidad de redondeo $u = 2^{-53}$. Se usan marcadores en lugar de líneas porque
+  las curvas de menor a mayor y de Kahan se superponen casi por completo.}
+  \label{fig:exp2-error}
+\end{figure}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Error relativo de $b_N$ respecto de $N/(N+1)$ para los cuatro algoritmos, en seis
+  valores de $N$ separados por un factor 10.}
+  \label{tab:exp2-errores}
+  \input{tablas/exp2-errores}
+\end{table}
+
+La Tabla \ref{tab:exp2-errores} da los valores puntuales en seis $N$ y la Tabla
+\ref{tab:exp2-resumen} resume las dos grillas completas. Sobre los mil valores de $N$ del rango
+grande, la suma de menor a mayor módulo y la de Kahan alcanzan el valor de referencia sin error
+medible en 599 y 862 casos respectivamente, contra 1 caso de la suma de mayor a menor y 5 de la
+randomizada. Los máximos de las dos primeras se mantienen entre $1.11$ y $1.15 \times 10^{-16}$, es
+decir en el nivel de $u$, y no crecen al pasar de la grilla chica a la grande. Los de las otras dos
+crecen un orden de magnitud entre una grilla y la otra.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Resumen de los cuatro algoritmos sobre las dos grillas completas, de mil valores de $N$
+  cada una. Las dos primeras columnas dan el error relativo máximo en cada grilla y la última, en
+  cuántos valores de $N$ de la grilla grande el resultado coincide bit a bit con la forma cerrada.}
+  \label{tab:exp2-resumen}
+  \input{tablas/exp2-resumen}
+\end{table}
+
+Repetir la suma randomizada 50 veces con $N = 10^{6}$, cada vez con una permutación distinta,
+produce 48 resultados diferentes: dos pares de repeticiones coinciden. La Figura
+\ref{fig:exp2-dispersion} muestra la dispersión de esos errores junto con los valores de los
+algoritmos deterministas, y la Tabla \ref{tab:exp2-dispersion} la resume. El error relativo va de
+$2.22 \times 10^{-16}$ a $5.64 \times 10^{-14}$, con mediana $2.10 \times 10^{-14}$ y desvío
+estándar $1.47 \times 10^{-14}$. El mayor supera al menor en un factor 254. Para el
+mismo $N$, la suma de mayor a menor módulo da un error de $4.76 \times 10^{-14}$, por encima de la
+mediana de la randomizada y por debajo de su máximo.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{exp2-dispersion-randomizada.pdf}
+  \caption{Dispersión de la suma randomizada con $N = 10^{6}$ sobre 50 repeticiones, cada una con
+  una permutación distinta derivada de la semilla maestra. El panel izquierdo muestra el error
+  relativo de cada repetición y el derecho, su histograma. Las dos líneas horizontales a trazos
+  marcan los algoritmos deterministas para el mismo $N$: la de arriba, el error de la suma de mayor
+  a menor módulo; la de abajo, el error nulo de las sumas de menor a mayor y de Kahan. El eje
+  vertical usa escala \texttt{symlog}, que da lugar al valor nulo.}
+  \label{fig:exp2-dispersion}
+\end{figure}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Dispersión del error relativo de la suma randomizada sobre 50 repeticiones con
+  $N = 10^{6}$.}
+  \label{tab:exp2-dispersion}
+  \input{tablas/exp2-dispersion}
+\end{table}
+
+\subsection{Representaciones equivalentes de una misma suma}
+\label{subsec:res-representaciones}
+
+Las dos representaciones de $b_N$, la suma de $1/(k(k+1))$ y la telescópica
+$\sum (1/k - 1/(k+1))$, no producen el mismo flotante. Coinciden bit a bit en 1 de los 1001 valores
+de $N$ de la grilla, únicamente en $N = 1$, y en el resto se separan por unas pocas unidades en el
+último lugar, según la última columna de la Tabla \ref{tab:exp3-bn}. Ninguna de las dos se degrada
+con $N$. La Figura \ref{fig:exp3-bn} muestra las dos curvas de error contenidas por la cota
+$\sqrt{N}\,u$ y sin tendencia creciente. La Tabla \ref{tab:exp3-resumen} da máximos de
+$1.67 \times 10^{-15}$ y $1.33 \times 10^{-15}$ sobre la grilla completa, con error exactamente
+nulo en 68 y 97 valores de $N$ respectivamente.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{exp3-representaciones-bn.pdf}
+  \caption{Error relativo de las dos representaciones de $b_N$ respecto de la forma cerrada
+  $N/(N+1)$, para $N = 1, 10, 20, \ldots, 10\,000$, en escala \texttt{symlog} en el eje vertical
+  para incluir los valores nulos. Las líneas grises marcan la cota estadística $\sqrt{N}\,u$ y la
+  unidad de redondeo $u = 2^{-53}$.}
+  \label{fig:exp3-bn}
+\end{figure}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Error relativo de las dos representaciones de $b_N$ respecto de $N/(N+1)$ en cinco
+  valores de $N$, con $b_N^{(1)} = \sum_k 1/(k(k+1))$ y $b_N^{(2)} = \sum_k (1/k - 1/(k+1))$. La
+  última columna da la distancia entre los dos resultados medida en unidades del último lugar (ulp)
+  del valor exacto.}
+  \label{tab:exp3-bn}
+  \input{tablas/exp3-bn-representaciones}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Resumen de las dos sucesiones del tercer experimento sobre la grilla completa de 1001
+  valores de $N$. Las cinco primeras filas corresponden a $b_N$, con
+  $b_N^{(1)} = \sum_k 1/(k(k+1))$ y $b_N^{(2)} = \sum_k (1/k - 1/(k+1))$, medidas contra la forma
+  cerrada $N/(N+1)$. La última fila corresponde a $c_N$, que no tiene forma cerrada: $D_N$ es la
+  discrepancia absoluta entre sus dos representaciones y nunca se anula.}
+  \label{tab:exp3-resumen}
+  \input{tablas/exp3-resumen}
+\end{table}
+
+La sucesión $c_N$ se comporta de otra manera. La discrepancia $D_N$ entre sus dos representaciones
+no es nula en ninguno de los 1001 valores de $N$ y crece de $5.55 \times 10^{-17}$ en $N = 1$ a
+$2.85 \times 10^{-11}$ en $N = 10\,000$, según la Tabla \ref{tab:exp3-cn}. En términos de cifras
+significativas, los dos resultados comparten 15 en $N = 1$ y 11 en $N = 10\,000$. El panel (a) de la
+Figura \ref{fig:exp3-cn} muestra esa curva junto con la suma de las discrepancias de los términos
+individuales, que coincide con $D_N$ en $N = 1$, donde hay un solo término, y queda por encima en
+todo el resto del rango. La misma figura incluye la cota $N^{2}u$ de la sección
+\ref{subsec:cancelacion}, que acota a las dos.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Discrepancia entre las dos representaciones de $c_N$ en cinco valores de $N$. Se informa
+  el valor calculado con la representación como cociente, la discrepancia absoluta
+  $D_N = |c_N^{(1)} - c_N^{(2)}|$, su cociente con $c_N$ y la cantidad de cifras decimales
+  significativas en que los dos resultados coinciden.}
+  \label{tab:exp3-cn}
+  \input{tablas/exp3-cn-diferencia}
+\end{table}
+
+Término a término, la discrepancia relativa entre $\sqrt{k^{2}+1} - k$ y $1/(\sqrt{k^{2}+1} + k)$
+crece con $k$ conforme a la cota $2k^{2}u$ de la ecuación \eqref{eq:cota-termino}, como muestra el
+panel (b) de la Figura \ref{fig:exp3-cn}. La Tabla \ref{tab:exp3-terminos} compara el $k$ que
+predice esa cota con el primero que efectivamente cruza cada umbral: la discrepancia supera
+$10^{-12}$ en $k = 87$, $10^{-8}$ en $k = 8193$ y $10^{-6}$ en $k = 68\,985$, entre 1.03 y 1.33
+veces el valor predicho. En el último umbral la coincidencia es exacta: la cota sitúa el colapso
+completo en $k = 2^{26} = 67\,108\,864$ y ese es el primer $k$ en que $\sqrt{k^{2}+1}$ devuelve
+exactamente $k$. Ahí el término calculado como diferencia vale cero y el calculado como cociente
+sigue siendo positivo.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{exp3-cancelacion-cn.pdf}
+  \caption{Cancelación en $c_N$, con $c_N^{(1)} = \sum_k 1/(\sqrt{k^{2}+1} + k)$ la representación
+  como cociente y $c_N^{(2)} = \sum_k (\sqrt{k^{2}+1} - k)$ la representación como diferencia. El
+  panel (a) muestra la discrepancia absoluta
+  $D_N = |c_N^{(1)} - c_N^{(2)}|$ entre las dos representaciones para
+  $N = 1, 10, 20, \ldots, 10\,000$, junto con la suma de las discrepancias de los términos, que es
+  lo que valdría $D_N$ si los errores de cada término no se compensaran entre sí, y con la cota
+  $N^{2}u$. El panel (b) muestra la discrepancia relativa $\delta_k$ entre las dos formas del
+  término $k$ sobre una grilla logarítmica hasta $k = 10^{8}$, con la cota $2k^{2}u$ y con el
+  primer $k$ en que la resta devuelve cero. Los dos paneles usan escala logarítmica en los dos
+  ejes.}
+  \label{fig:exp3-cn}
+\end{figure}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Umbrales de la discrepancia relativa $\delta_k$ entre las dos representaciones del término $k$ de
+  $c_N$. Para cada umbral $\varepsilon$ se compara el $k$ que predice la cota $2k^{2}u$ con el
+  primer $k$ medido que alcanza ese umbral.}
+  \label{tab:exp3-terminos}
+  \input{tablas/exp3-bonus-terminos}
+\end{table}
+
+Las dos formas cerradas de $b_N$, en cambio, casi siempre coinciden. La Tabla
+\ref{tab:exp3-cerradas} muestra que $1 - 1/(N+1)$ y $N/(N+1)$ difieren en 4 de los 1001 valores de
+$N$ de la grilla y en 19 de los primeros 99\,999, siempre por exactamente 1 ulp. Medidos contra el
+valor racional exacto, el error relativo máximo es $1.11 \times 10^{-16}$ para la primera forma y
+$5.55 \times 10^{-17}$ para la segunda, es decir la mitad. Las dos saturan en 1 alrededor de
+$N = 1.8 \times 10^{16}$, con un valor de $N$ de diferencia entre una y otra.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Comparación de las dos formas cerradas de $b_N$. Las discrepancias se cuentan sobre la
+  grilla del experimento y sobre todos los $N$ menores que $100\,000$; los errores relativos se
+  miden contra el valor racional exacto calculado con aritmética de fracciones. Las dos últimas
+  filas dan el primer $N$ en que cada forma devuelve exactamente 1.}
+  \label{tab:exp3-cerradas}
+  \input{tablas/exp3-bonus-formas-cerradas}
+\end{table}

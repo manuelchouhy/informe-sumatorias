@@ -1,0 +1,248 @@
+\section{Marco teórico}
+\label{sec:marco}
+% Una subsección por concepto clave, solo los que se usan. Cada afirmación fuerte con referencia.
+
+\subsection{Representación en punto flotante}
+\label{subsec:punto-flotante}
+
+Una computadora almacena cada número real en una cantidad fija de bits, así que solo puede
+representar un subconjunto finito de $\mathbb{R}$. El estándar IEEE~754 fija cómo se elige ese
+subconjunto y cómo se redondean los resultados de las operaciones (Institute of Electrical and
+Electronics Engineers [IEEE], 2019). Python usa el
+formato de doble precisión, \texttt{binary64}, que reparte sus 64 bits en un bit de signo, 11 bits
+de exponente y 52 bits de mantisa almacenada. Todo número normal del formato se escribe como
+\begin{equation}
+  x = (-1)^{s}\,(1.m_1m_2\ldots m_{52})_2 \times 2^{e},
+  \qquad -1022 \le e \le 1023 ,
+  \label{eq:binary64}
+\end{equation}
+donde el 1 inicial no se guarda. La mantisa tiene entonces 53 bits de precisión efectiva. El mayor
+valor representable es del orden de $1.80 \times 10^{308}$ y el menor normal positivo, del orden de
+$2.23 \times 10^{-308}$.
+
+Llamamos $\mathbb{F}$ al conjunto de números representables y $\mathrm{fl}(x)$ al elemento de
+$\mathbb{F}$ más próximo a $x$, con desempate al de mantisa par, que es el modo de redondeo por
+defecto del estándar. Dos constantes describen la resolución del formato. La unidad de redondeo
+$u = 2^{-53} \approx 1.11 \times 10^{-16}$ acota el error relativo de representar un real,
+\begin{equation}
+  \frac{|\mathrm{fl}(x) - x|}{|x|} \le u ,
+  \label{eq:redondeo}
+\end{equation}
+y el épsilon de máquina $\varepsilon_{\mathrm{M}} = 2^{-52} \approx 2.22 \times 10^{-16}$ mide la
+distancia entre 1 y el siguiente elemento de $\mathbb{F}$. La distinción importa porque las dos
+constantes difieren en un factor 2 y la bibliografía usa las dos (Higham, 2002).
+
+De \eqref{eq:redondeo} sale el modelo estándar del análisis de error de redondeo: si
+$\mathrm{op}$ es una de las cuatro operaciones aritméticas o la raíz cuadrada, el estándar exige que
+el resultado en máquina sea el redondeo del resultado exacto, de modo que
+\begin{equation}
+  \mathrm{fl}(x \mathbin{\mathrm{op}} y) = (x \mathbin{\mathrm{op}} y)(1 + \delta),
+  \qquad |\delta| \le u .
+  \label{eq:modelo}
+\end{equation}
+Cada operación introduce un error relativo acotado por $u$, y el análisis de un algoritmo consiste
+en seguir cómo se acumulan esos $\delta$ (Higham, 2002).
+
+El espaciado de $\mathbb{F}$ no es uniforme: dentro de la binada $[2^{e}, 2^{e+1})$ los elementos
+están separados por $2^{e-52}$. Los enteros son un caso particular útil. Todos los enteros con
+$|n| \le 2^{53}$ pertenecen a $\mathbb{F}$; por encima de $2^{53}$ el espaciado pasa a valer 2 y
+solo se representan los pares. De ahí sale el techo que aparece en el experimento de la
+asociatividad. Si $x \ge 2^{54}$, el 1 queda por debajo de medio espaciado y el redondeo lo
+descarta, de modo que $\mathrm{fl}(1 + x) = x$. En la binada $[2^{53}, 2^{54})$, donde el
+espaciado vale 2, el 1 vale exactamente medio espaciado y el resultado lo decide el desempate a
+mantisa par: $\mathrm{fl}(1 + x) = x$ si $x$ es múltiplo de 4 y $\mathrm{fl}(1 + x) = x + 2$ si no
+lo es. El caso que interesa acá es el primero, porque $x = 2^{53}$ es múltiplo de 4.
+
+El límite tampoco es simétrico, y esa asimetría explica una de las anomalías del experimento. En
+$[2^{52}, 2^{53})$ el espaciado es 1 y en $[2^{53}, 2^{54})$ es 2, así que $2^{53} - 1$ es
+representable exacto y $2^{53} + 1$ no lo es. Restar primero deja el resultado en la binada de
+abajo, que tiene el doble de resolución, y ahí el 1 sobrevive: $\mathrm{fl}(1 - 2^{53})$ vale
+$-(2^{53} - 1)$ y no $-2^{53}$.
+
+Cuando una operación produce un valor de módulo mayor que el máximo representable, el estándar
+devuelve $\pm\infty$ en lugar de detener el cálculo. Las operaciones indeterminadas sobre esos
+valores, como $\infty - \infty$, devuelven \texttt{NaN}, un dato especial que se propaga por el
+resto de la cuenta y que no es igual a sí mismo (IEEE, 2019).
+
+\subsection{Enteros de precisión arbitraria}
+\label{subsec:enteros}
+
+El tipo \texttt{int} de Python no tiene ancho fijo: cada entero usa tantas palabras de memoria como
+necesite su magnitud, y las operaciones aritméticas entre enteros son exactas mientras haya memoria
+disponible (Python Software Foundation, 2024). No hay desborde ni redondeo, así que las identidades
+algebraicas que valen en $\mathbb{Z}$ valen también en el programa.
+
+Lo que sí cambia es el costo. Un entero de valor $|n|$ ocupa del orden de $\log_2 |n|$ bits, de modo
+que $b^{k}$ necesita unos $k \log_2 b$ bits. Multiplicar ese número por $b$ cuesta un tiempo
+proporcional a su longitud, y calcular las potencias sucesivas hasta $k = N$ acumula un costo del
+orden de $N^{2}$. La aritmética exacta se paga en tiempo y en memoria.
+
+C y Java no ofrecen este tipo por defecto: el tipo entero habitual tiene 32 o 64 bits fijos, y un
+resultado fuera de rango desborda. Las dos familias resuelven el desborde de manera distinta: el
+estándar de C declara que el desborde de un entero con signo es comportamiento indefinido, es decir,
+que el compilador no está obligado a producir ningún resultado en particular (International
+Organization for Standardization [ISO], 2018), mientras que Java define el resultado como la
+reducción módulo $2^{n}$ en complemento a dos, con $n$ el ancho del tipo. Los enteros de ancho fijo
+de NumPy, como \texttt{int64}, siguen esta segunda convención, que para ese tipo es la reducción
+módulo $2^{64}$.
+
+Esa convención importa para leer los datos. La
+aritmética módulo $2^{64}$ es la de un anillo, con lo cual sigue siendo asociativa, conmutativa y
+distributiva de forma exacta. Un cálculo cuyas operaciones intermedias desbordan puede terminar en
+el resultado correcto si la expresión final vuelve a caer dentro del rango representable, porque las
+cifras que se perdieron por arriba se cancelan entre sí.
+
+\subsection{Asociatividad y conmutatividad en aritmética de punto flotante}
+\label{subsec:asociatividad}
+
+En $\mathbb{R}$ la suma es conmutativa y asociativa, y por eso una sumatoria se escribe sin
+paréntesis y sin indicar en qué orden se recorren los sumandos. La suma de punto flotante conserva
+solo la primera de las dos propiedades. Es conmutativa porque $\mathrm{fl}(x + y)$ depende del valor
+exacto de $x + y$ y de la función de redondeo, y las dos son simétricas en sus argumentos. No es
+asociativa: con $x = 1$ e $y = 2^{53}$,
+\begin{equation}
+  \mathrm{fl}\bigl(\mathrm{fl}(1 + 2^{53}) - 2^{53}\bigr) = 0
+  \quad\text{y}\quad
+  \mathrm{fl}\bigl(1 + \mathrm{fl}(2^{53} - 2^{53})\bigr) = 1 .
+  \label{eq:contraejemplo}
+\end{equation}
+Los dos miembros son el mismo cálculo con distinta agrupación de paréntesis y difieren en todo el
+valor del término (Goldberg, 1991).
+
+La distinción tiene una consecuencia directa sobre el experimento del orden de suma. Una suma
+acumulada de $N$ términos es una secuencia encadenada de sumas binarias, y permutar los sumandos
+equivale a evaluar un agrupamiento distinto de la misma expresión. Lo que se pone a prueba al
+reordenar los términos es la asociatividad y no la conmutatividad: el resultado cambia porque la
+suma de punto flotante no es asociativa.
+
+Para la suma acumulada de $N$ términos del mismo signo, el análisis de peor caso da una cota de
+error absoluto proporcional a $N u \sum_{k} |x_k|$, que se obtiene suponiendo que los $N-1$
+redondeos se acumulan todos en la misma dirección (Higham, 2002). Es una cota conservadora. Si en
+cambio se modelan los $\delta$ de \eqref{eq:modelo} como variables independientes de media nula, la
+suma de los errores se comporta como un paseo aleatorio y el crecimiento típico del error relativo
+resulta
+\begin{equation}
+  E_{\mathrm{rel}} \sim \sqrt{N}\,u ,
+  \label{eq:cota-raiz}
+\end{equation}
+que es la referencia estadística con la que se comparan los datos de este trabajo (Higham, 2002).
+Del mismo análisis se desprende que, para términos positivos, acumular de menor a mayor módulo
+reduce el error: cada término chico se suma cuando el acumulador todavía es chico y su información
+no cae por debajo del último bit de la mantisa.
+
+\subsection{Error relativo}
+\label{subsec:error-relativo}
+
+Dado un valor teórico $x \ne 0$ y su aproximación numérica $\hat{x}$, el error relativo es
+\begin{equation}
+  E_{\mathrm{rel}} = \frac{|\hat{x} - x|}{|x|} .
+  \label{eq:error-relativo}
+\end{equation}
+Es la medida natural en punto flotante porque la precisión del formato es relativa: según
+\eqref{eq:redondeo}, el error de representación crece con la magnitud del número, pero su cociente
+con esa magnitud queda acotado por $u$ en todo el rango. Como referencia de lectura, un error
+relativo del orden de $10^{-d}$ corresponde a unas $d$ cifras decimales significativas correctas.
+
+La interpretación de esta medida tiene dos límites. El valor teórico también
+se evalúa en punto flotante, así que el piso de lo que se puede medir es del orden de $u$: un error
+relativo nulo significa que el resultado coincide bit a bit con el valor de referencia calculado, no
+que sea exacto. El error relativo también necesita una forma cerrada contra la cual
+comparar. Cuando la sucesión no tiene una, lo que se compara son dos representaciones entre sí, y la
+diferencia absoluta $D_N$ entre ellas mide la discrepancia de los dos cálculos, no el error de
+ninguno de los dos.
+
+\subsection{Suma de Kahan}
+\label{subsec:kahan}
+
+La suma compensada de Kahan reduce el error de la suma acumulada arrastrando de forma explícita la
+parte del término que el redondeo descarta (Kahan, 1965). El algoritmo mantiene, además del
+acumulador $s$, una variable de compensación $c$ que guarda el error de la iteración anterior. En
+cada paso, con el término $x_k$, calcula
+\begin{equation}
+  y = x_k - c, \qquad
+  t = s + y, \qquad
+  c = (t - s) - y, \qquad
+  s = t ,
+  \label{eq:kahan}
+\end{equation}
+donde cada línea se evalúa en punto flotante. La clave está en la tercera: cuando $|s| \ge |y|$, la
+expresión $(t - s) - y$ recupera exactamente el error de redondeo cometido al formar $t = s + y$, y
+la iteración siguiente lo devuelve al cálculo restándoselo al término entrante.
+
+La cota de error del algoritmo para $N$ términos es de la forma $2u + O(Nu^{2})$ veces
+$\sum_k |x_k|$, es decir, prácticamente independiente de $N$ para los tamaños de este trabajo
+(Higham, 2002). Frente a la cota $Nu$ de la suma acumulada, la ganancia crece con la cantidad de
+términos. El costo es de cuatro operaciones de punto flotante por término en lugar de una. Queda
+además una advertencia de implementación: un compilador o una biblioteca que reasocie las
+expresiones de \eqref{eq:kahan} suponiendo que la suma es asociativa anula la compensación, porque
+en $\mathbb{R}$ la variable $c$ vale idénticamente cero.
+
+\subsection{Sumas telescópicas}
+\label{subsec:telescopicas}
+
+Una suma es telescópica cuando su término general se escribe como diferencia de dos valores
+consecutivos de una misma sucesión, $x_k = t_k - t_{k+1}$. En ese caso los términos intermedios se
+cancelan de a pares y queda
+\begin{equation}
+  \sum_{k=1}^{N} (t_k - t_{k+1}) = t_1 - t_{N+1} .
+  \label{eq:telescopica}
+\end{equation}
+La sucesión $b_N = \sum_{k=1}^{N} 1/(k(k+1))$ es de este tipo, con $t_k = 1/k$, porque la
+descomposición en fracciones simples da $1/(k(k+1)) = 1/k - 1/(k+1)$. Aplicando
+\eqref{eq:telescopica} se obtiene la forma cerrada
+\begin{equation}
+  b_N = 1 - \frac{1}{N+1} = \frac{N}{N+1} .
+  \label{eq:forma-cerrada}
+\end{equation}
+
+Las cuatro expresiones anteriores son la misma en $\mathbb{R}$ y describen cuatro programas
+distintos en $\mathbb{F}$. La suma del producto evalúa una división y una suma por término; la
+telescópica evalúa dos divisiones y una resta antes de acumular; y las dos formas cerradas de
+\eqref{eq:forma-cerrada} difieren en la cantidad de redondeos, una división y una resta contra una
+sola división. Por \eqref{eq:modelo}, cada operación agrega su propio $\delta$, así que las cotas de
+error de las cuatro no tienen por qué coincidir, y tampoco sus resultados.
+
+\subsection{Cancelación catastrófica}
+\label{subsec:cancelacion}
+
+La cancelación catastrófica es la pérdida de cifras significativas que ocurre al restar dos números
+de punto flotante próximos entre sí (Goldberg, 1991). Si los operandos llegan a la resta con errores
+relativos $\delta_1$ y $\delta_2$ heredados de cálculos anteriores, el error relativo del resultado
+queda acotado por
+\begin{equation}
+  \frac{|\widehat{x - y} - (x - y)|}{|x - y|}
+  \le \frac{|x| + |y|}{|x - y|} \max(|\delta_1|, |\delta_2|) ,
+  \label{eq:amplificacion}
+\end{equation}
+y el factor $(|x| + |y|)/|x - y|$ crece sin cota cuando $x$ e $y$ se acercan. Las cifras altas, que
+eran correctas, se cancelan entre sí; las cifras bajas, que ya estaban contaminadas, quedan al
+frente del resultado.
+
+El nombre del fenómeno sugiere que el error lo introduce la resta, y no es así. El lema de Sterbenz
+establece que si $x$ e $y$ son positivos y cumplen
+$y/2 \le x \le 2y$, entonces $x - y$ pertenece a $\mathbb{F}$ y la resta se calcula sin error
+(Sterbenz, 1974). Es decir que en el régimen donde la cancelación es más severa la resta suele ser
+exacta: no crea error nuevo, expone el que traían los operandos.
+
+La sucesión $c_N = \sum_{k=1}^{N} 1/(\sqrt{k^{2}+1} + k)$ ilustra el mecanismo. Su término general
+admite la representación equivalente $\sqrt{k^{2}+1} - k$, que se obtiene multiplicando y dividiendo
+por el conjugado. Para $k$ grande, $\sqrt{k^{2}+1} \approx k\,(1 + 1/(2k^{2}))$, de modo que los dos
+operandos de la resta están dentro de un factor 2 y el lema de Sterbenz se aplica. El único error lo
+aporta el redondeo previo de la raíz, de tamaño relativo $u$ y por lo tanto de tamaño absoluto del
+orden de $k u$. Como el valor exacto de la diferencia es cercano a $1/(2k)$, el error relativo del
+término calculado por la resta resulta del orden de
+\begin{equation}
+  \frac{k u}{1/(2k)} = 2k^{2} u ,
+  \label{eq:cota-termino}
+\end{equation}
+una cota que crece cuadráticamente con $k$ y que alcanza el valor 1, es decir la pérdida completa de
+las cifras significativas, en $k = 1/\sqrt{2u} = 2^{26}$. De ahí se desprende una cota para la suma
+completa. Cada término aporta un error absoluto del orden de $k u$, de modo que si los errores de
+los $N$ términos se alinearan en la misma dirección la discrepancia acumulada sería del orden de
+$\sum_{k \le N} k u \approx N^{2} u / 2$, y crecería cuadráticamente con $N$. En lo que sigue se
+usa la forma redondeada $N^{2}u$, que es el doble de esa estimación y por lo tanto la acota. Es el
+análogo de la cota $Nu$ de la suma acumulada: describe el peor caso y no el típico. La representación como cociente suma en el
+denominador en lugar de restar, así que no hay cancelación y su error relativo se mantiene del orden
+de $u$ para todo $k$. La recomendación general es la de Goldberg (1991): frente a dos expresiones
+algebraicamente equivalentes conviene elegir la que evita la resta de cantidades próximas, y la
+racionalización por el conjugado es la transformación habitual para conseguirlo.

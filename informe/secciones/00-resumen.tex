@@ -1,0 +1,28 @@
+\begin{abstract}
+% Máximo 300 palabras. Objetivo, metodología, resultados más relevantes, conclusión principal.
+% Autosuficiente: se tiene que entender sin leer el resto.
+
+Las propiedades conmutativa y asociativa de la suma no se conservan en la aritmética de punto
+flotante que ejecuta una computadora. Este trabajo mide ese apartamiento sobre tres sucesiones cuyo
+valor exacto se conoce o se puede acotar: $a_N = \sum_{k=1}^{N} (1 + b^{k} - b^{k})$, que vale $N$;
+$b_N = \sum_{k=1}^{N} 1/(k(k+1))$, de forma cerrada $N/(N+1)$; y
+$c_N = \sum_{k=1}^{N} 1/(\sqrt{k^{2}+1} + k)$, que admite la representación equivalente
+$\sqrt{k^{2}+1} - k$. Los cálculos se implementaron en Python con acumulación explícita, sin
+funciones de reducción de biblioteca, y las figuras y tablas se generan con una corrida del código.
+
+Con doble precisión, el término $1 + b^{k} - b^{k}$ deja de aportar pasado el mayor $k$ con
+$|b|^{k} < 2^{53}$, y ese umbral predicho coincidió con el medido salvo en $b = \pm 2$, la única
+base cuyas potencias pisan exactamente ese borde y la única donde la agrupación de los paréntesis
+cambia el resultado. El entero de ancho fijo
+devuelve el valor correcto pese a desbordar, porque la aritmética módulo $2^{64}$ conserva la
+estructura de anillo. El orden de acumulación separó cuatro algoritmos en dos grupos con más de dos
+órdenes de magnitud de diferencia, y ordenar de menor a mayor módulo alcanzó para igualar a la suma
+compensada de Kahan. La cota estadística $\sqrt{N}\,u$ contuvo los errores medidos, mientras que la
+cota de peor caso $Nu$ los sobreestimó por más de tres órdenes de magnitud. En $c_N$ la cancelación
+entre cantidades próximas sí degradó el resultado, y la cota $2k^{2}u$ acertó el $k$ exacto en que
+el término colapsa.
+
+La pérdida de precisión aparece cuando el sumando cae por debajo de la resolución local del formato,
+y la elección del orden de acumulación y de la representación algebraica pesa más que la del
+formato.
+\end{abstract}

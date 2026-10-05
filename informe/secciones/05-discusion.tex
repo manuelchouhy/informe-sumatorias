@@ -1,0 +1,255 @@
+\section{Discusión}
+\label{sec:discusion}
+% Interpretación, comparación con la teoría, hallazgos inesperados, limitaciones.
+% Organizado por los mismos tres fenómenos que Resultados.
+
+\subsection{Pérdida de la asociatividad}
+\label{subsec:dis-asociatividad}
+
+El contraste entre las Figuras \ref{fig:exp1-int} y \ref{fig:exp1-float} separa dos aritméticas que
+la notación matemática no distingue. Con $b$ de tipo \texttt{int}, la identidad $1 + b^{k} - b^{k} = 1$
+se traslada al programa sin pérdida porque el entero de Python es exacto y no tiene techo
+(sección \ref{subsec:enteros}); las tres asociaciones son entonces tres formas de escribir el mismo
+cálculo. Con $b$ de tipo \texttt{float} la identidad deja de valer en cuanto $b^{k}$ alcanza el
+tamaño en que el 1 ya no cabe en la mantisa del acumulador. La coincidencia entre el $k^{\ast}$
+predicho por la condición $b^{k} \ge 2^{53}$ y la altura de la meseta medida, exacta en seis de las
+ocho bases de la Tabla \ref{tab:exp1-umbrales} y con un término de diferencia en las dos restantes,
+indica que el efecto no depende de detalles de la implementación
+sino del espaciado de $\mathbb{F}$ descrito en \eqref{eq:binary64}. Es el contraejemplo
+\eqref{eq:contraejemplo} repetido a lo largo de un barrido.
+
+Conviene precisar qué falla. La potencia $b^{k}$ está bien calculada dentro de lo que el formato
+permite; lo que se pierde es el 1, absorbido en la suma $1 + b^{k}$. El término no se anula porque
+$b^{k}$ sea inexacto, sino porque la agrupación decide en qué momento el 1 se encuentra con un
+número demasiado grande.
+
+Las dos primeras asociaciones dieron resultados idénticos en todas las bases ensayadas, y la razón
+es sintáctica antes que numérica: Python evalúa $1 + b^{k} - b^{k}$ de izquierda a derecha, así que
+esa expresión y $(1 + b^{k}) - b^{k}$ describen la misma secuencia de operaciones. La consigna pide
+comparar tres asociaciones y el lenguaje entrega dos programas distintos. El par idéntico deja
+aislado el efecto del agrupamiento: las dos expresiones que se traducen a la misma secuencia
+coinciden en todas las bases, y la única que se aparta es la que agrupa distinto.
+
+La tercera asociación se aparta de las otras dos solo en $b = \pm 2.0$, y ahí difiere en un
+término: retiene uno más con $b = 2.0$ y uno menos con $b = -2.0$. El mecanismo es la asimetría entre binadas vecinas señalada en la sección
+\ref{subsec:punto-flotante}: en $[2^{52}, 2^{53})$ el espaciado vale 1 y en $[2^{53}, 2^{54})$ vale
+2, de modo que $1 - 2^{53}$ es representable y $1 + 2^{53}$ no lo es. Restar primero deja el
+resultado en la binada de abajo, que tiene el doble de resolución. Que el efecto aparezca
+únicamente con $b = \pm 2$ es consecuencia de que solo esa base pisa exactamente el borde $2^{53}$:
+con $b = 3$, $5$ o $10$ la potencia salta por encima del borde y las tres asociaciones pierden el
+término en el mismo $k$. No alcanza con que la base sea potencia de dos. Con $b = 4$ las potencias
+recorren los exponentes pares y saltan de $2^{52}$ a $2^{54}$ sin tocar $2^{53}$, de modo que las
+tres asociaciones vuelven a coincidir. La inversión con $b = -2.0$ es la misma asimetría con los
+signos cambiados.
+
+Ese mecanismo también da cuenta del régimen $0 \le b \le 1$ de la Tabla
+\ref{tab:exp1-b-hasta-uno}. El
+fenómeno principal no aparece porque $|b|^{k}$ queda acotado por 1 y nunca se acerca a $2^{53}$; lo
+que queda es el redondeo de $1 + b^{k}$, de medio ulp en la binada $[1, 2)$, es decir,
+$2^{-53} = 1.11 \times 10^{-16}$, exactamente el valor máximo que registra la tabla para las dos
+primeras asociaciones. La tercera, que resta primero y trabaja en la binada de abajo, no muestra
+desvío en ninguna de las cinco bases. Que el error de la suma completa sea nulo pese a esos desvíos
+es consistente con el mismo espaciado: el acumulador crece hasta 1000, donde el espaciado de
+$\mathbb{F}$ vale $2^{-43} \approx 1.14 \times 10^{-13}$. Un desvío de $10^{-16}$ por término cae
+por debajo de medio espaciado apenas el acumulador supera unas pocas unidades. El redondeo de la
+acumulación descarta el error del término. El mismo mecanismo de absorción que arruina el
+experimento con bases grandes lo salva con bases chicas.
+
+El desborde a $\infty$ merece una lectura aparte. Cuando $b^{k}$ excede el mayor representable, el
+estándar no interrumpe el cálculo: devuelve $\infty$, y la resta $\infty - \infty$ produce
+\texttt{NaN}, que se propaga por el resto de la acumulación. Por eso las curvas de la Figura
+\ref{fig:exp1-float} no se desvían: desaparecen. En términos prácticos, el desborde no se manifiesta
+como una falla sino como un valor que contamina todo lo que viene después. Detectarlo exige
+inspeccionar el resultado; el programa termina igual.
+
+El comportamiento de los enteros de ancho fijo fue el primero de los dos resultados que
+contradijeron la expectativa inicial. La
+Tabla \ref{tab:exp1-int64} muestra que $b^{k}$ sale del rango de \texttt{int64} muy temprano, en
+$k = 19$ para $b = 10$, y que el valor almacenado tiene el signo cambiado en tres de las cuatro
+bases. Aun así $a_{1000}$ vale 1000 en las cuatro. La explicación está en la sección
+\ref{subsec:enteros}: el entero de 64 bits reduce módulo $2^{64}$ en complemento a dos, y esa
+aritmética es la de
+un anillo, donde $(1 + x) - x = 1$ vale para todo $x$ sin excepción. El desborde entero no destruye
+información, la reduce módulo $2^{64}$, y la resta posterior deshace la reducción. El redondeo de
+punto flotante, en cambio, descarta bits de forma irreversible. Esa es la diferencia entre las dos
+formas de perder magnitud, y es lo que hace que el mismo experimento revele el problema con
+\texttt{float} y lo esconda con \texttt{int64}.
+
+La conclusión que no se sigue de ese dato es que los enteros de ancho fijo sean seguros. La suma que
+propone la consigna es justamente una en la que el valor desbordado se cancela contra sí mismo.
+Cualquier expresión que use $b^{k}$ sin cancelarlo, por ejemplo una comparación, una división o una
+impresión, entrega el valor de la cuarta columna de la Tabla \ref{tab:exp1-int64} y no el de la
+tercera. A eso se suma que en C el desborde de un entero con signo es comportamiento indefinido
+(ISO, 2018): el mismo programa ni siquiera tiene garantizado el resultado modular que sí produce
+NumPy.
+
+La aritmética exacta de Python resuelve el problema pero lo cobra. La Tabla \ref{tab:exp1-costo}
+muestra que el tamaño de $b^{N}$ crece linealmente y el tiempo de la corrida completa, de manera
+cuadrática, con un cociente contra la corrida en flotantes que crece hasta dos órdenes de magnitud
+al ir de $N = 1000$ a $N = 100\,000$. El crecimiento coincide con el argumento de la sección \ref{subsec:enteros}: cada
+multiplicación cuesta un tiempo proporcional a la longitud del operando y las longitudes crecen con
+$k$. Para $N$ del orden de mil el sobrecosto es tolerable; para $N$ del orden de $10^{5}$, un solo
+número ocupa 43.3 KiB y la corrida se vuelve dos órdenes de magnitud más lenta. La elección entre
+exactitud y costo depende del tamaño del problema.
+
+\subsection{Dependencia del orden de suma}
+\label{subsec:dis-orden}
+
+El primer punto es de nombre. El experimento se plantea sobre la propiedad conmutativa, pero lo que
+los datos ponen a prueba es la asociatividad. La suma de punto flotante sí es conmutativa, porque
+$\mathrm{fl}(x + y)$ depende del valor exacto de $x + y$ y de una función de redondeo simétrica en
+sus argumentos. Los cuatro algoritmos de la Figura \ref{fig:exp2-error} suman exactamente los mismos
+números y difieren solo en cómo encadenan las sumas parciales, es decir, en el agrupamiento. La
+distinción se enunció en la sección \ref{subsec:asociatividad} y los resultados la sostienen: si el
+efecto viniera de la conmutatividad, permutar los índices no debería cambiar nada, y cambia.
+
+La separación de las cuatro curvas en dos grupos sigue lo que predice el análisis de la sección
+\ref{subsec:asociatividad}. Los términos $1/(k(k+1))$ decrecen como $k^{-2}$, así que sumar de mayor
+a menor lleva el acumulador cerca de 1 en las primeras iteraciones y obliga a los términos tardíos,
+de orden $10^{-12}$ en $N = 10^{6}$, a competir con un espaciado local del orden de $10^{-16}$. Cada
+uno pierde su parte baja. Sumar de menor a mayor agrupa primero los términos chicos entre sí, donde
+el espaciado local es comparable a su tamaño, y esa información sobrevive hasta el final. La suma de
+Kahan llega al mismo lugar por otro camino: recupera el residuo de cada redondeo y lo reinyecta, con la cota
+$2u + O(Nu^{2})$ de la sección \ref{subsec:kahan}, que no crece con $N$. La Tabla
+\ref{tab:exp2-resumen} lo confirma: los máximos de esos dos algoritmos quedan entre
+$1.11$ y $1.15 \times 10^{-16}$, es decir, en el nivel de $u$, y no crecen al multiplicar $N$ por
+cien.
+
+De ahí sale la lectura práctica, que no es la esperable. Ordenar de menor a mayor módulo alcanza
+para igualar a Kahan en esta serie: máximos indistinguibles, los dos al nivel de $u$, y la
+diferencia queda en
+la cantidad de $N$ con coincidencia bit a bit, 599 contra 862 de mil. Cuando el problema es el
+orden, ordenar ya lo resuelve, y Kahan cuesta cuatro operaciones de punto flotante por término en
+lugar de una. La ventaja de Kahan aparece cuando el orden no está disponible de antemano: acá los
+términos vienen ordenados por construcción y basta recorrer el índice al revés. En una serie cuyas
+magnitudes no se conocen sin calcularlas, ordenar exige una pasada previa y memoria para
+guardar los términos. Kahan no necesita ninguna de las dos cosas.
+
+Las dos curvas que crecen quedan contenidas por $\sqrt{N}\,u$ de \eqref{eq:cota-raiz} en todo el
+rango, lo que respalda el modelo de errores independientes de media nula frente al análisis de peor
+caso. La cota conservadora $Nu$ vale $1.11 \times 10^{-10}$ en $N = 10^{6}$ y el error medido es
+$5.03 \times 10^{-14}$: sobreestima por más de tres órdenes de magnitud. Suponer que los $N-1$
+redondeos se alinean en la misma dirección describe un caso posible y no el caso típico.
+
+La Figura \ref{fig:exp2-error} muestra además una estructura que la teoría anticipa: los errores no
+nulos se acomodan en bandas horizontales discretas y no en una nube continua. Como $b_N$ está cerca
+de 1, la diferencia entre el resultado y la referencia solo puede tomar valores múltiplos del
+espaciado local de $\mathbb{F}$. Lo que se ve en el eje vertical son
+cantidades enteras de ulp.
+
+La dispersión de la suma randomizada responde la pregunta de la consigna y agrega un matiz. La
+respuesta es que no da siempre lo mismo: 48 resultados distintos en 50 repeticiones, con un error
+que va de $2.22 \times 10^{-16}$ a $5.64 \times 10^{-14}$, un factor 254 entre el mejor y el peor
+caso, según la Tabla \ref{tab:exp2-dispersion}. Las dos coincidencias no contradicen el resto. Los
+resultados posibles son múltiplos discretos de un ulp dentro de un rango acotado, así que con 50
+muestras las repeticiones son esperables. La variabilidad tampoco es aleatoriedad del hardware: cada
+permutación define un agrupamiento distinto y el resultado de cada uno es determinista, tanto que
+fijar la semilla reproduce las 50 corridas.
+
+La comparación con el orden decreciente pide cuidado en las dos direcciones. En mediana la
+randomizada es mejor, $2.10 \times 10^{-14}$ contra $4.76 \times 10^{-14}$ para el mismo $N$, porque
+mezclar rompe el patrón sistemático de absorción que produce recorrer los términos de mayor a menor.
+Pero su máximo sobre la grilla grande es peor, $6.84 \times 10^{-14}$ contra
+$5.03 \times 10^{-14}$. El orden decreciente es impreciso y predecible; el aleatorio es en mediana
+algo más preciso y no reproducible sin fijar la semilla. Para un cálculo que debe dar el mismo valor dos
+veces, la segunda propiedad pesa más que la primera.
+
+\subsection{Representaciones equivalentes de una misma suma}
+\label{subsec:dis-representaciones}
+
+Las dos sucesiones de este experimento responden de manera opuesta a la misma transformación
+algebraica, y esa oposición es lo que explica cuándo la cancelación importa.
+
+Para $b_N$, las dos representaciones no producen el mismo flotante, cosa que era previsible porque
+describen programas distintos según la sección \ref{subsec:telescopicas}, pero ninguna se degrada.
+La representación telescópica resta $1/k - 1/(k+1)$, dos cantidades cuyo cociente tiende a 1, de modo que la
+cancelación se agrava con $k$; y sin embargo la Figura \ref{fig:exp3-bn} muestra las dos curvas
+contenidas por $\sqrt{N}\,u$ y sin tendencia creciente. La razón es que el término completo es de
+orden $k^{-2}$ y se suma contra un acumulador que tiende a 1. Las cifras que la resta arruina son
+cifras bajas de un sumando pequeño, y la acumulación las iba a descartar de todos modos. La
+cancelación es un problema cuando el término cancelado domina el resultado, no cuando es una
+corrección menor. La ventaja de la representación telescópica en la Tabla \ref{tab:exp3-resumen}, 97 contra
+68 valores de $N$ con error nulo y un máximo algo menor, es de unos pocos ulp y no muestra tendencia
+con $N$; no alcanza para preferir una representación sobre la otra.
+
+Para $c_N$ el resultado es el contrario: $D_N$ no se anula en ninguno de los 1001 valores de $N$ y
+crece casi seis órdenes de magnitud sobre la grilla, hasta $2.85 \times 10^{-11}$. Las dos
+representaciones pasan de coincidir en 15 cifras a coincidir en 11. Acá el término cancelado es el
+resultado mismo. El mecanismo es el descrito en la sección \ref{subsec:cancelacion} y merece
+enunciarse al revés de como sugiere el nombre del fenómeno: por el lema de Sterbenz la resta
+$\sqrt{k^{2}+1} - k$ es exacta, y el error lo aporta el redondeo previo de la raíz, de tamaño
+absoluto del orden de $ku$, que la resta deja al frente de un resultado de tamaño $1/(2k)$. La
+cancelación catastrófica no crea error, expone el que los operandos ya traían.
+
+El acuerdo entre esa derivación y las mediciones es el resultado más ajustado del trabajo. La cota
+$2k^{2}u$ de \eqref{eq:cota-termino} se obtuvo con aproximaciones de primer orden, y la Tabla
+\ref{tab:exp3-terminos} muestra que los umbrales medidos caen entre 1.03 y 1.33 veces los
+predichos, siempre del lado conservador. En el umbral final la coincidencia deja de ser aproximada:
+la cota sitúa la pérdida completa de cifras significativas en $k = 1/\sqrt{2u} = 2^{26}$ y el primer
+$k$ en que $\sqrt{k^{2}+1}$ devuelve exactamente $k$ es $67\,108\,864 = 2^{26}$. Un argumento de
+orden de magnitud acierta un umbral de ocho cifras.
+
+Dos advertencias sobre cómo leer esos datos. La primera es que $D_N$ mide la discrepancia entre dos
+cálculos y no el error de ninguno de los dos, porque $c_N$ no tiene forma cerrada contra la cual
+comparar (sección \ref{subsec:error-relativo}). Atribuir casi todo $D_N$ a la representación por
+diferencia es razonable: la representación como cociente suma en el denominador y su error
+relativo por término se mantiene del orden de $u$. Aun así, es una atribución apoyada en la teoría
+y no una medición directa. La segunda es que $D_N$ queda muy por debajo de la suma de las
+discrepancias de los términos individuales, que aparece en el panel (a) de la Figura
+\ref{fig:exp3-cn}. Los errores de los términos tienen signos distintos y se compensan parcialmente, el mismo
+comportamiento de paseo aleatorio que sostiene \eqref{eq:cota-raiz}. La suma de las cotas describe
+el caso en que todos los errores se alinean, y presentarla como el error esperado sería tan
+pesimista como usar $Nu$ para la suma acumulada.
+
+Las dos formas cerradas de $b_N$ dieron el segundo resultado contraintuitivo. Por conteo de
+operaciones, $1 - 1/(N+1)$ acumula dos redondeos y $N/(N+1)$ uno solo, así que \eqref{eq:modelo}
+predice para la primera una cota del doble. Los errores máximos contra el valor racional exacto de
+la Tabla \ref{tab:exp3-cerradas} confirman esa relación con precisión: $1.11 \times 10^{-16}$
+contra $5.55 \times 10^{-17}$. Lo que no se sigue de ahí es que las dos expresiones den resultados
+distintos en la práctica. Difieren en 4 de los 1001 valores de la grilla y en 19 de los primeros
+$99\,999$, siempre por exactamente 1 ulp, y saturan en 1 con un solo $N$ de diferencia entre una y
+otra. El redondeo adicional casi nunca llega a cambiar el flotante devuelto: para que lo cambie, el
+valor exacto tiene que caer lo bastante cerca del punto medio entre dos representables, y eso ocurre
+en una fracción pequeña de los casos.
+
+De la comparación entre $c_N$ y las formas cerradas sale el punto general del experimento. Contar
+operaciones acota el error pero no lo predice caso por caso: dos expresiones con cotas que difieren
+en un factor 2 pueden devolver el mismo flotante casi siempre, mientras que dos expresiones con
+cotas que difieren en un factor $k^{2}$ terminan sin ninguna cifra en común. La recomendación de
+Goldberg (1991) de preferir la forma que evita restar cantidades próximas queda respaldada de manera
+asimétrica: elegirla no empeoró ningún caso de este trabajo, y en el término de $c_N$ es, hacia
+$k = 2^{26}$, la diferencia entre un error relativo del orden de $u$ y la pérdida completa de las
+cifras significativas.
+
+\subsection{Limitaciones}
+\label{subsec:limitaciones}
+
+El alcance de estas conclusiones está acotado por cuatro decisiones de diseño.
+
+La referencia contra la cual se mide es, en la mayoría de los casos, un flotante. El error relativo
+de \eqref{eq:error-relativo} se calcula contra $N/(N+1)$ evaluado en \texttt{binary64}, de modo que
+el piso de lo medible es del orden de $u$ y los ceros de las Tablas \ref{tab:exp2-resumen} y
+\ref{tab:exp3-resumen} significan coincidencia bit a bit con esa referencia, no exactitud. Solo la
+comparación de las formas cerradas usa un patrón exacto, calculado con aritmética de fracciones. Un
+trabajo posterior podría repetir las grillas grandes contra un valor de referencia en precisión
+extendida y separar el error del algoritmo del error de la referencia.
+
+Todas las mediciones corresponden a un único formato, \texttt{binary64}, sobre una máquina y un
+intérprete. Los umbrales dependen del formato de manera predecible: en \texttt{binary32} el techo
+$2^{53}$ del primer experimento pasaría a $2^{24}$ y el colapso de $c_N$ se adelantaría en más de
+cuatro órdenes de magnitud en $k$. Eso es una extrapolación de las fórmulas y no una medición. Los
+tiempos de la Tabla \ref{tab:exp1-costo} son los más sensibles al entorno: solo el cociente entre
+las dos columnas es una magnitud estable entre corridas.
+
+Las tres sucesiones estudiadas tienen términos positivos y decrecientes, y las conclusiones sobre el
+orden de suma no se trasladan más allá de esa clase. En una serie con términos de signos alternados,
+la cancelación entre términos domina el balance de error y acumular de menor a mayor módulo puede
+dejar las cancelaciones grandes para el final, es decir, empeorar el resultado. La ventaja de
+ordenar que se observa acá depende de que todos los términos empujen en la misma dirección.
+
+Los rangos también acotan lo que se puede afirmar. El estudio de dispersión usa 50 repeticiones, que
+alcanzan para el rango, la mediana y el desvío, pero no para describir las colas de la distribución.
+Las grillas llegan a $N = 10^{6}$ para las sumas y a $k = 10^{8}$ para los términos de $c_N$; la
+concordancia con $\sqrt{N}\,u$ está verificada dentro de esos límites y extrapolarla a tamaños
+mucho mayores, donde el término $O(Nu^{2})$ de la cota de Kahan deja de ser despreciable, no está
+respaldado por estos datos.

@@ -1,0 +1,140 @@
+\section{Metodología}
+\label{sec:metodologia}
+% Herramientas y versiones, diseño de cada experimento, criterios de análisis, semilla,
+% uso de Claude, y el link al repositorio (SOLO acá).
+
+\subsection{Entorno y herramientas}
+\label{subsec:entorno}
+
+Todo el trabajo numérico se hizo en Python 3.12.3 sobre Windows 11, con NumPy 1.26.4 (Harris
+et al., 2020) para los arreglos y los generadores de números aleatorios, y Matplotlib 3.11.1
+(Hunter, 2007) para las figuras. El tipo \texttt{float} de Python corresponde al formato
+\texttt{binary64} descrito en la sección \ref{subsec:punto-flotante}, y el tipo \texttt{int} es el
+entero de precisión arbitraria de la sección \ref{subsec:enteros}. Las dos únicas dependencias
+externas están declaradas en \texttt{requirements.txt} con sus versiones mínimas. El informe se
+escribió en \LaTeX{} y se compiló con Tectonic.
+
+Ninguna sumatoria del trabajo usa la función \texttt{sum()} de Python ni las reducciones de NumPy.
+Los términos se acumulan siempre con un ciclo \texttt{for} explícito.
+El objeto de estudio es el orden en que se encadenan las sumas parciales, y una reducción de
+biblioteca puede agrupar los sumandos de una manera que el programa no controla.
+
+\subsection{Organización del código y reproducción de los resultados}
+\label{subsec:codigo}
+
+El código está en el directorio \texttt{src/}, con un módulo por experimento
+(\texttt{experimento1\_\allowbreak asociativa.py},
+\texttt{experimento2\_\allowbreak conmutativa.py} y
+\texttt{experimento3\_\allowbreak representaciones.py}), un módulo de utilidades compartidas
+(\texttt{comun.py}) y un punto de entrada (\texttt{main.py}). El comando \texttt{python src/main.py}
+corre los tres experimentos en unos tres minutos y regenera desde cero las siete figuras y las doce
+tablas del informe; pasarle un número corre un solo experimento.
+
+Cada figura se guarda como PDF vectorial en \texttt{informe/figuras/} y cada tabla como cuerpo de
+un entorno \texttt{tabular} en \texttt{informe/tablas/}, que el documento incluye con
+\texttt{\textbackslash input}. El informe no contiene ningún número que el código no haya escrito
+en alguno de esos archivos. La consola imprime solo un resumen de tres líneas por experimento, que
+sirve para verificar que la corrida terminó bien; nada de ahí se copia al texto. Todas las figuras
+comparten un mismo estilo, fijado una sola vez en \texttt{comun.aplicar\_estilo()}, para que los
+tamaños de letra sean legibles en la página impresa.
+
+El repositorio con el código, las figuras, las tablas y las fuentes \LaTeX{} de este informe está
+disponible en \url{https://github.com/manuelchouhy/informe-sumatorias}.
+
+\subsection{Diseño de los experimentos}
+\label{subsec:diseno}
+
+El primer experimento evalúa $a_N = \sum_{k=1}^{N} (1 + b^{k} - b^{k})$ para
+$N = 1, 2, \ldots, 1000$ con las tres asociaciones que fija la consigna,
+$1 + b^{k} - b^{k}$, $(1 + b^{k}) - b^{k}$ y $(1 - b^{k}) + b^{k}$, sobre las bases
+$b \in \{2, 3, 5, 10\}$ de tipo \texttt{int} y $b \in \{2.0, 3.0, 5.0, 10.0\}$ de tipo
+\texttt{float}. Las potencias se calculan multiplicando de a uno y no con el operador
+\texttt{**}: con flotantes, \texttt{**} interrumpe el programa con \texttt{OverflowError} al pasar
+el mayor valor representable. La multiplicación sucesiva devuelve $\infty$, que es el comportamiento
+que el experimento necesita observar. Los desbordes no se atrapan; se dejan llegar a
+$\infty$ y a \texttt{NaN}, se grafican tal como salen y se explican en la discusión. Las preguntas
+adicionales de la consigna se resuelven con el mismo código y otros parámetros: bases
+$b \in \{0.0,\, 0.1,\, 0.5,\, 0.9,\, 1.0\}$ para el régimen $b \le 1$, bases
+$b \in \{-2.0, -3.0, -5.0, -10.0\}$ para el signo negativo, una simulación de la aritmética de
+enteros con signo de 64 bits para el caso de ancho fijo, y una medición de tiempo sobre
+$N \in \{1000,\, 5000,\, 10\,000,\, 20\,000,\, 50\,000,\, 100\,000\}$ para el costo de los enteros
+de precisión arbitraria. La simulación de 64 bits reduce cada operación intermedia módulo $2^{64}$
+en complemento a dos, que es la convención de Java y la del tipo \texttt{int64} de NumPy. Se la
+implementó de forma explícita en lugar de usar \texttt{int64} porque cada multiplicación que
+desborda emite un aviso de NumPy en la consola, y el resultado es el mismo.
+
+El segundo experimento evalúa $b_N = \sum_{k=1}^{N} 1/(k(k+1))$ con cuatro algoritmos de suma:
+recorriendo $k$ de 1 a $N$, que por ser los términos decrecientes equivale a sumar de mayor a menor
+módulo; recorriéndolo de $N$ a 1, que es de menor a mayor; sobre una permutación aleatoria de los
+índices; y con la suma compensada de Kahan de la ecuación \eqref{eq:kahan}. Los cuatro calculan el
+término con la misma expresión: la única diferencia entre ellos es el orden de acumulación, no el
+redondeo del término. Las cuatro funciones reciben $N$ como único argumento obligatorio. La de la
+permutación acepta además un índice de repetición opcional que selecciona cuál de las permutaciones
+derivadas de la semilla maestra se usa, y que solo interviene en el estudio de dispersión. El error relativo se mide contra la forma cerrada
+$N/(N+1)$ sobre dos grillas, $N = 10, 20, \ldots, 10\,000$ y
+$N = 1000, 2000, \ldots, 1\,000\,000$. La dispersión de la suma aleatoria se estudia repitiéndola
+50 veces con $N = 10^{6}$. Los dos órdenes que no dependen de $N$ se calculan con un único barrido
+que anota las sumas parciales en cada punto de la grilla; los otros dos se recalculan para cada
+$N$, y eso explica casi todo el tiempo de corrida.
+
+Sobre la grilla $N = 1, 10, 20, \ldots, 10\,000$, el tercer experimento compara representaciones
+equivalentes. Para $b_N$ enfrenta la suma de $1/(k(k+1))$ contra la telescópica
+$\sum (1/k - 1/(k+1))$, las dos medidas contra la forma cerrada. La sucesión
+$c_N = \sum_{k=1}^{N} 1/(\sqrt{k^{2}+1} + k)$ no tiene forma cerrada conocida, así que su
+representación como cociente se compara contra la representación como diferencia,
+$\sqrt{k^{2}+1} - k$, mediante la discrepancia absoluta $D_N$ definida en la sección
+\ref{subsec:error-relativo}. Las dos
+preguntas adicionales se estudian aparte: las formas cerradas $1 - 1/(N+1)$ y $N/(N+1)$ se comparan
+contra el valor racional exacto, calculado con el tipo \texttt{Fraction} de la biblioteca estándar,
+porque lo que se mide ahí son los redondeos de las dos expresiones y un flotante de referencia no
+serviría de patrón; y los términos individuales se recorren sobre una grilla logarítmica de 500
+valores de $k$ hasta $k = 10^{8}$.
+
+\subsection{Criterios de análisis}
+\label{subsec:criterios}
+
+La medida de precisión es el error relativo de la ecuación \eqref{eq:error-relativo} siempre que
+haya una forma cerrada contra la cual comparar, y la discrepancia absoluta $D_N$ entre
+representaciones cuando no la hay. Como el valor de referencia también se evalúa en punto flotante,
+el piso de lo medible es del orden de $u$, y un error relativo nulo se lee como coincidencia bit a
+bit con esa referencia.
+
+Las figuras de error usan escala logarítmica en el eje vertical porque los valores comparados
+abarcan varios órdenes de magnitud. Cuando la serie contiene errores exactamente nulos, que una
+escala logarítmica pura no puede representar, se usa escala \texttt{symlog}. Cuando dos curvas se
+superponen casi por completo, se dibujan con marcadores en lugar de líneas continuas para que la
+superposición se vea en vez de esconderse detrás de la curva de arriba. Junto a los datos se grafican
+las cotas teóricas de la sección \ref{sec:marco}, $\sqrt{N}\,u$ de la ecuación \eqref{eq:cota-raiz}
+para las sumas y $2k^{2}u$ de la ecuación \eqref{eq:cota-termino} para los términos de $c_N$, de modo
+que la comparación entre lo predicho y lo medido quede en la misma figura.
+
+Los tiempos de ejecución que aparecen en el informe son medidas y no valores exactos: cada una es el
+mínimo de tres repeticiones tomadas con \texttt{time.perf\_counter()}, que deja afuera las
+repeticiones más afectadas por el ruido del sistema operativo. Aun así los valores cambian entre
+corridas, y la nota al pie de la tabla correspondiente lo aclara.
+
+Las curvas de los experimentos segundo y tercero dependen de los barridos incrementales, y su
+correctitud se verifica dentro del propio código. La función \texttt{\_verificar\_trazas()} de cada
+módulo compara bit a bit el resultado del barrido contra la llamada directa a cada función pública,
+sobre varios valores de $N$, y detiene la corrida si alguno difiere.
+
+\subsection{Aleatoriedad y reproducibilidad}
+\label{subsec:semillas}
+
+El único componente aleatorio del trabajo es la permutación de los índices en la suma randomizada.
+Todo lo aleatorio deriva de una semilla maestra fija, declarada en \texttt{comun.py}. La función
+\texttt{comun.generador(*claves)} construye un \texttt{numpy.random.default\_rng} a partir de la
+secuencia formada por esa semilla seguida de las claves que identifican la corrida. Cada repetición
+recibe claves distintas, con lo cual usa un generador distinto e independiente de los demás, y la
+corrida completa sigue siendo reproducible.
+Reutilizar la misma semilla en cada repetición habría producido 50 permutaciones idénticas y habría
+vuelto vacío el estudio de la dispersión.
+
+\subsection{Uso de asistentes de inteligencia artificial}
+\label{subsec:ia}
+
+Durante el desarrollo se usó el asistente Claude Code (Anthropic, 2026) como apoyo para la
+implementación en Python, la redacción del informe y la revisión de la consistencia entre el texto y
+los datos generados. Los autores definieron el diseño de los experimentos, verificaron los
+resultados numéricos y son responsables del contenido final. Ningún dato del informe proviene del
+asistente: todos salen de las figuras y tablas que produce el código del repositorio.

@@ -1,0 +1,72 @@
+\section{Conclusiones}
+\label{sec:conclusiones}
+% Síntesis, respuesta a los objetivos, recomendaciones, líneas futuras. Sin resultados nuevos.
+
+Los tres experimentos responden al objetivo general con un mismo criterio. Las propiedades
+algebraicas de la suma dejan de valer en la computadora cuando la magnitud del sumando y la del
+acumulador se separan lo suficiente como para que el término chico caiga por debajo de la resolución
+local del formato. El resto son variantes de esa situación: el 1 que desaparece frente a $2^{53}$,
+los términos tardíos de una serie decreciente que se pierden contra un acumulador cercano a 1, y las
+cifras de una raíz que la resta deja al descubierto. La condición depende del espaciado de los
+números representables, no del lenguaje ni de la implementación.
+
+Sobre el primer objetivo específico, el umbral de la pérdida quedó determinado y verificado. Con
+punto flotante de doble precisión, el término $1 + b^{k} - b^{k}$ deja de aportar pasado el mayor
+$k$ con $|b|^{k} < 2^{53}$, y ese valor predicho coincidió con la meseta medida en seis de las ocho
+bases ensayadas, con un término de diferencia en las dos restantes.
+La agrupación de los paréntesis solo cambia el resultado cuando la potencia cae exactamente en
+$2^{53}$, el borde donde el espaciado pasa de 1 a 2; entre las bases ensayadas eso ocurre
+únicamente con $b = \pm 2$. El
+entero de precisión arbitraria de Python conserva la identidad para todo $N$, al costo de un tiempo
+que crece de manera cuadrática. El entero de ancho fijo también la conserva, pero por una razón
+distinta: la reducción módulo $2^{64}$ preserva la estructura de anillo y la resta deshace el
+desborde. Esa coincidencia no vuelve seguro al entero de ancho fijo, porque depende de que el valor
+desbordado se cancele dentro de la misma expresión.
+
+Sobre el segundo, el orden de acumulación resultó ser un factor de primer orden y no un detalle de
+implementación. En la misma serie, los cuatro algoritmos se separaron en dos grupos que difieren en
+más de dos órdenes de magnitud de error en el rango grande, y las 50 permutaciones aleatorias de un
+mismo cálculo produjeron
+48 resultados distintos. La conclusión práctica es más específica de lo previsto:
+acumular de menor a mayor módulo alcanzó para igualar a la suma compensada de Kahan en esta serie,
+de modo que cuando el problema es el orden, ordenar ya lo resuelve. Kahan conserva la ventaja
+cuando el orden de las magnitudes no se conoce sin calcularlas.
+
+Sobre el tercero, la comparación entre las dos sucesiones delimita cuándo la cancelación entre
+cantidades próximas es un problema. En $b_N$ la representación telescópica resta términos cada vez
+más parecidos y aun así no se degrada, porque lo que pierde son cifras bajas de un sumando que ya
+era pequeño frente al acumulado. En $c_N$ la misma transformación destruye el resultado, porque ahí
+el término cancelado es el resultado mismo. El fenómeno se entiende mejor si se separa el lema de
+Sterbenz del nombre que lleva: la resta suele ser exacta y no crea error, solo expone el que los
+operandos traían de un redondeo anterior.
+
+Sobre el cuarto, las cotas teóricas describieron los datos con distinta fidelidad. La referencia
+estadística $\sqrt{N}\,u$ contuvo a las curvas de error en todo el rango ensayado. La cota de peor
+caso $Nu$ las sobreestimó por más de tres órdenes de magnitud, lo que confirma que suponer redondeos
+alineados describe un caso posible y no el típico. La cota $2k^{2}u$ de la cancelación resultó la
+más precisa de las tres: predijo los umbrales medidos
+dentro de un factor 1.33 y acertó el valor exacto del $k$ en que el término colapsa. Contar
+operaciones, en cambio, acota el error sin predecirlo caso por caso, como muestran las dos formas
+cerradas, cuyas cotas difieren en un factor 2 y cuyos resultados casi siempre coinciden.
+
+Sobre el quinto, cada figura y cada tabla del informe se genera con una sola corrida del código del
+repositorio, y ningún número del texto proviene de la consola.
+
+De todo esto se desprenden cuatro recomendaciones para quien programe una sumatoria larga. Sumar de
+menor a mayor módulo cuando el orden de las magnitudes se conoce de antemano, y recurrir a una suma
+compensada cuando no. Preferir, entre expresiones algebraicamente equivalentes, la que evita restar
+cantidades próximas, que en el caso estudiado se obtiene racionalizando por el conjugado. Fijar y
+documentar la semilla si el orden de acumulación depende de un sorteo, porque de lo contrario el
+cálculo no es reproducible. Y verificar el resultado, ya que ninguno de los fenómenos estudiados
+interrumpe el programa: el desborde devuelve $\infty$ y \texttt{NaN} en silencio, y el entero de
+ancho fijo puede entregar el valor correcto y ocultar que las operaciones intermedias desbordaron.
+
+Quedan abiertas varias líneas. Repetir las mediciones en \texttt{binary32} permitiría comprobar si
+los umbrales se desplazan como predicen las fórmulas. Usar precisión extendida como patrón separaría
+el error del algoritmo del error de la referencia, que en este trabajo comparten el mismo piso.
+Extender el estudio a series con términos de signos alternados pondría a prueba la recomendación
+sobre el orden, que fue establecida sobre series de términos positivos y podría invertirse. Falta
+también comparar la acumulación secuencial contra la suma por pares y contra variantes más
+elaboradas de compensación, que Higham (2002) analiza y que este trabajo no ensayó. Queda por medir
+qué ocurre cuando el compilador o la paralelización reasocian las operaciones por su cuenta, un
+escenario donde el programador ya no controla el agrupamiento.

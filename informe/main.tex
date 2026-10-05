@@ -1,0 +1,62 @@
+% Informe: Implementación de Sumatorias — Cálculo Aplicado, UCU 2026-2
+% Compilar con: tectonic informe/main.tex   (o importar la carpeta en Overleaf)
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}   % es-tabla: "Tabla" en vez de "Cuadro"
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+\usepackage{microtype}
+
+% Las fórmulas en línea no se parten al final del renglón: TeX solo puede cortar
+% dentro de $...$ en una relación o en un operador binario, así que basta con
+% prohibir esos dos puntos de corte.
+\relpenalty=10000
+\binoppenalty=10000
+
+\graphicspath{{figuras/}}
+\captionsetup{width=0.9\textwidth,font=small}
+\decimalpoint
+
+\begin{document}
+
+% ---------- Portada ----------
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\Large Universidad Católica del Uruguay\par}
+  {\large Facultad de Ingeniería y Tecnología\par}
+  {\large Departamento de Ciencias Exactas y Naturales\par}
+  \vspace{2.5cm}
+  {\LARGE\bfseries Errores de redondeo en sumatorias:\ asociatividad, orden de suma y cancelación catastrófica\par}
+  \vspace{2cm}
+  {\large Martín De León \quad Manuel Chouhy \quad Joaquín Riál\par}
+  \vspace{2cm}
+  {\large Cálculo Aplicado\par}
+  {\large Docentes: Maglis Mujica \quad Candido De Oliveira\par}
+  \vspace{1.5cm}
+  {\large \textbf{[FECHA PENDIENTE]}\par}
+  \vfill
+\end{titlepage}
+
+\input{secciones/00-resumen}
+\clearpage
+
+\tableofcontents
+\clearpage
+
+\input{secciones/01-introduccion}
+\input{secciones/02-marco-teorico}
+\input{secciones/03-metodologia}
+\input{secciones/04-resultados}
+\input{secciones/05-discusion}
+\input{secciones/06-conclusiones}
+\input{secciones/07-bibliografia}
+
+\end{document}
